@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Storyteller’s Dice</title>
+<style>
+:root{--paper:#fcf9f2;--card:#f1e8d6;--card2:#f8f2e4;--ink:#4a2f20;--soft:#8a6d4b;--gold:#b98a45;--line:#d6c7a8;--dark:#4a3f36;--robe:#5b4a8a;--trim:#8f7bd0;--hatb:#4a3a78}
+@media (prefers-color-scheme:dark){:root{--paper:#1f1914;--card:#2c241c;--card2:#251e17;--ink:#f0e4cc;--soft:#b79c75;--gold:#d3a35a;--line:#4a3d2e;--dark:#120e0a}}
+html[data-theme=christmas]{--paper:#f8f4ea;--card:#e4eddd;--card2:#f4f8ef;--ink:#1f3d2b;--soft:#8b3030;--gold:#c8962e;--line:#b9cdb4;--dark:#2d4a38;--robe:#b3202a;--trim:#ffffff;--hatb:#8c1820}
+html[data-theme=halloween]{--paper:#17101c;--card:#2a1d33;--card2:#221729;--ink:#f3e3cf;--soft:#c59a6b;--gold:#ff8a1f;--line:#4b3358;--dark:#0d0810;--robe:#3a2358;--trim:#ff8a1f;--hatb:#231436}
+html[data-theme=easter]{--paper:#fbf8fc;--card:#eae1f3;--card2:#f6f1fb;--ink:#4b3b63;--soft:#7a6a94;--gold:#e08fb5;--line:#d7cbe6;--dark:#6b5a8a;--robe:#78b896;--trim:#ffd6e8;--hatb:#5a9a7c}
+html[data-theme=valentine]{--paper:#fdf4f5;--card:#f7dde2;--card2:#fcecef;--ink:#5e1a2e;--soft:#a14a62;--gold:#d6456f;--line:#e8bcc6;--dark:#7a2a3f;--robe:#c2315a;--trim:#ffc4d3;--hatb:#8f1f40}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 Georgia,"Palatino Linotype",Palatino,serif;min-height:100vh}
+body::before{content:"";position:fixed;inset:10px;border:2px solid var(--ink);border-radius:3px 7px 4px 6px;opacity:.55;pointer-events:none}
+main{max-width:1000px;margin:0 auto;padding:34px 24px 60px}
+h1{font:italic 400 clamp(2rem,6vw,3.2rem)/1.1 "Palatino Linotype",Palatino,Georgia,serif;text-align:center;margin:8px 0 4px}
+.themepick{display:flex;align-items:center;gap:8px;color:var(--soft)}
+.themepick select{font:inherit;background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-radius:4px 8px 5px 7px;padding:8px 10px}
+.themepick select:disabled{opacity:.6}
+body,.slot,.seed,button,.chip{transition:background-color .4s,color .4s,border-color .4s}
+.sub{text-align:center;color:var(--soft);font-style:italic;margin:0 0 22px}
+.bar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
+button{font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);padding:9px 18px;border-radius:4px 8px 5px 7px}
+button:hover{background:var(--card2)}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button.main{background:var(--ink);color:var(--paper);font-weight:700;padding:11px 26px}
+button.main:hover{background:var(--soft)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.slot{background:var(--card);border:1.5px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;grid-template-columns:84px 1fr;gap:6px 14px;align-items:center}
+.slot.locked{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.die{width:84px;height:84px;display:grid;place-items:center;border:0;background:none;padding:0;position:relative}
+.die .shape{position:absolute;inset:0;background:var(--dark);}
+.die .shape::after{content:"";position:absolute;inset:3px;background:var(--card2);clip-path:inherit}
+.die b{position:relative;font:700 1.55rem/1 Georgia,serif;color:var(--ink)}
+.die small{position:absolute;bottom:-2px;right:0;font-size:.68rem;color:var(--soft)}
+.s6 .shape{clip-path:polygon(8% 8%,92% 8%,92% 92%,8% 92%)}
+.s8 .shape{clip-path:polygon(50% 0,96% 50%,50% 100%,4% 50%)}
+.s10 .shape{clip-path:polygon(50% 0,94% 38%,80% 94%,20% 94%,6% 38%)}
+.s12 .shape{clip-path:polygon(50% 0,85% 12%,100% 50%,85% 88%,50% 100%,15% 88%,0 50%,15% 12%)}
+.rolling .shape,.rolling b{animation:tumble .5s linear infinite}
+.rolling b{animation-name:counter}
+@keyframes tumble{0%{transform:rotate(0) scale(1)}25%{transform:rotate(100deg) scale(1.1)}50%{transform:rotate(200deg) scale(.92)}75%{transform:rotate(290deg) scale(1.08)}100%{transform:rotate(360deg) scale(1)}}
+@keyframes counter{to{transform:none}}
+.landed .shape{animation:land .45s ease-out}
+@keyframes land{0%{transform:scale(1.3) rotate(-14deg)}60%{transform:scale(.92) rotate(5deg)}100%{transform:none}}
+.slot h2{margin:0;font-size:.98rem;color:var(--soft);font-weight:700}
+.slot p{margin:2px 0 0;font-size:1.05rem;min-height:3.2em}
+.tools{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tools button{padding:3px 11px;font-size:.85rem}
+details{grid-column:1/-1;font-size:.88rem;color:var(--soft)}
+summary{cursor:pointer;display:inline}
+details ol{margin:6px 0 0;padding-left:26px}
+details li.hit{color:var(--ink);font-weight:700}
+.seed{margin:28px 0 0;padding:18px 22px;border:1.5px solid var(--ink);border-radius:6px;background:var(--card2)}
+.seed h3{margin:0 0 6px;font-size:1.15rem}
+.seed ul{margin:0;padding-left:20px}
+.seed li{margin:4px 0}
+.words{margin-top:34px;padding-top:20px;border-top:1.5px solid var(--line)}
+.words h2{margin:0 0 4px;font:italic 400 1.5rem Palatino,Georgia,serif}
+.words .row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.words select{font:inherit;background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-radius:4px;padding:8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:3px 14px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 18px;border-radius:5px;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:1}
+.seedwrap{display:flex;gap:18px;align-items:flex-end;margin-top:28px}
+.seedwrap .seed{flex:1;margin:0}
+.wiz{position:relative;width:132px;flex:none;display:none;transform-origin:bottom center}
+.wiz.show{display:block;animation:pop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(0) rotate(-20deg);opacity:0}100%{transform:none;opacity:1}}
+.wiz svg{width:100%;height:auto;display:block;overflow:visible;animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.wiz .beard{transform-origin:60px 64px;animation:sway 2.6s ease-in-out infinite}
+@keyframes sway{50%{transform:skewX(-5deg)}}
+.wiz .eyes{transform-origin:60px 58px;animation:blink 4s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.wiz .orb{transform-origin:100px 34px;animation:glow 2s ease-in-out infinite}
+@keyframes glow{50%{transform:scale(1.18);opacity:.8}}
+.wiz .armL{transform-origin:44px 82px;transition:transform .3s}
+.wiz .staffg{transform-origin:100px 150px;transition:transform .3s}
+.wiz.casting .armL{animation:wave .35s ease-in-out infinite alternate}
+@keyframes wave{from{transform:rotate(-40deg)}to{transform:rotate(-75deg)}}
+.wiz.casting .staffg{animation:shake .25s linear infinite}
+@keyframes shake{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+.wiz.casting .orb{animation:charge .3s ease-in-out infinite alternate}
+@keyframes charge{from{transform:scale(1.4);opacity:1}to{transform:scale(2);opacity:.85}}
+.bubble{position:absolute;left:50%;bottom:100%;transform:translateX(-30%);width:170px;margin-bottom:6px;background:var(--card2);border:1.5px solid var(--ink);border-radius:8px;padding:6px 10px;font-size:.82rem;line-height:1.3;text-align:center}
+.bubble::after{content:"";position:absolute;top:100%;left:34%;border:7px solid transparent;border-top-color:var(--ink)}
+.spark{position:absolute;width:7px;height:7px;background:var(--gold);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);pointer-events:none;animation:spark .9s ease-out forwards}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.2) rotate(180deg);opacity:0}}
+@media (max-width:560px){.seedwrap{flex-direction:column;align-items:center}.seedwrap .seed{width:100%}.bubble{transform:translateX(-50%)}}
+button.icon{padding:0;width:38px;height:38px;border-radius:50%;font-size:1.25rem;line-height:1}
+button.icon.spin{animation:spin .5s ease-out}
+@keyframes spin{to{transform:rotate(-360deg)}}
+.empty{color:var(--soft);font-size:.9rem;margin:0}
+#fx{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+#fx .sp{position:absolute}
+#fx .sp svg{width:100%;height:auto;display:block;overflow:visible}
+.sp.fly{left:-170px;animation:flyx var(--d,24s) linear var(--dl,0s) infinite}
+.sp.hop{left:-90px;animation:flyx var(--d,34s) linear var(--dl,0s) infinite}
+@keyframes flyx{to{transform:translateX(calc(100vw + 360px))}}
+.sp.fly svg,.sp.bob svg{animation:bobY 2.4s ease-in-out infinite}
+@keyframes bobY{50%{transform:translateY(-12px)}}
+.sp.hop svg{animation:hop .7s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1.08,.9)}50%{transform:translateY(-24px) scale(.95,1.06)}}
+.sp.flit{animation:flit 16s ease-in-out infinite alternate}
+@keyframes flit{0%{transform:translate(0,0)}25%{transform:translate(9vw,-6vh)}50%{transform:translate(2vw,5vh)}75%{transform:translate(12vw,-2vh)}100%{transform:translate(4vw,7vh)}}
+.wl{animation:wingL .22s ease-in-out infinite alternate}
+.wr{animation:wingR .22s ease-in-out infinite alternate}
+@keyframes wingL{to{transform:rotate(-28deg)}}
+@keyframes wingR{to{transform:rotate(28deg)}}
+.bw{animation:bwf .18s ease-in-out infinite alternate}
+@keyframes bwf{to{transform:scaleX(.35)}}
+.lg{animation:gallop .3s ease-in-out infinite alternate}
+@keyframes gallop{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
+.arm{animation:wave2 1.2s ease-in-out infinite alternate}
+@keyframes wave2{from{transform:rotate(-14deg)}to{transform:rotate(18deg)}}
+.glow{animation:flick 1.5s ease-in-out infinite}
+@keyframes flick{0%,100%{opacity:1}40%{opacity:.55}60%{opacity:.9}}
+.ghostfade{animation:gf 5s ease-in-out infinite}
+@keyframes gf{50%{opacity:.55}}
+.pt{position:absolute;top:0;left:var(--x);font-size:var(--s);color:var(--c);opacity:0;text-shadow:0 0 5px var(--g);animation:var(--a) var(--t) linear forwards}
+@keyframes fallp{0%{transform:translate(0,-6vh) rotate(0);opacity:0}10%{opacity:.85}90%{opacity:.85}100%{transform:translate(var(--dx),108vh) rotate(var(--r));opacity:0}}
+@keyframes risep{0%{transform:translate(0,108vh) rotate(0);opacity:0}10%{opacity:.9}90%{opacity:.8}100%{transform:translate(var(--dx),-8vh) rotate(var(--r));opacity:0}}
+.lights{position:absolute;top:13px;left:16px;right:16px;display:flex;justify-content:space-between;background:linear-gradient(#2d4a38,#2d4a38) 0 3px/100% 1.5px no-repeat}
+.lights i{width:8px;height:13px;border-radius:50% 50% 55% 55%;margin-top:3px;background:var(--b);box-shadow:0 0 9px 2px var(--b);animation:twinkle 1.8s ease-in-out infinite;animation-delay:var(--dl)}
+@keyframes twinkle{50%{opacity:.3;box-shadow:0 0 2px 0 var(--b)}}
+.fog{position:absolute;left:-20%;right:-20%;bottom:0;height:34vh;background:radial-gradient(ellipse at 25% 100%,rgba(170,140,210,.22),transparent 60%),radial-gradient(ellipse at 75% 100%,rgba(255,138,31,.12),transparent 55%);animation:fogm 26s ease-in-out infinite alternate}
+@keyframes fogm{to{transform:translateX(12%)}}
+.toast{z-index:20}
+#bookOv{position:fixed;inset:0;z-index:15;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;overflow:hidden;background:rgba(10,6,4,0);transition:background .45s}
+#bookOv.show{display:flex}
+#bookOv.on{background:rgba(10,6,4,.74)}
+#bookfly{--P:min(86vw,340px,calc((100vh - 190px)/1.36));width:var(--P);height:calc(var(--P)*1.36);flex:none}
+.book{position:relative;width:100%;height:100%;perspective:1900px;transition:transform .95s cubic-bezier(.5,.1,.3,1);filter:drop-shadow(0 14px 22px rgba(0,0,0,.55))}
+@media (min-width:760px){.book.open{transform:translateX(calc(var(--P)/2))}}
+.leaf,.cover,.endc{position:absolute;inset:0;transform-origin:left center;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.45,.05,.25,1)}
+.leaf.flipped,.cover.flipped{transform:rotateY(-180deg)}
+.leaf{cursor:pointer}
+.cover.flipped .cfront,.leaf.flipped .front{pointer-events:none}
+.cover:not(.flipped) .face.back,.leaf:not(.flipped) .face.back{pointer-events:none}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;border-radius:2px 8px 8px 2px}
+.face.back{transform:rotateY(180deg);border-radius:8px 2px 2px 8px}
+.page{background:linear-gradient(90deg,rgba(0,0,0,.2),transparent 8%),var(--card2);color:var(--ink);padding:20px 20px 26px 26px;display:flex;flex-direction:column;box-shadow:inset 0 0 0 1px var(--line)}
+.face.back.page{background:linear-gradient(270deg,rgba(0,0,0,.2),transparent 8%),var(--card2);padding:20px 26px 26px 20px}
+.ph{display:flex;justify-content:space-between;gap:8px;font-size:.72rem;color:var(--soft);border-bottom:1px solid var(--line);padding-bottom:5px}
+.page h4{margin:8px 0 4px;font:italic 400 1.25rem Palatino,Georgia,serif}
+.brief{margin:0 0 8px;font-size:.8rem;line-height:1.4;color:var(--soft)}
+.brief em{color:var(--ink)}
+.pbody{overflow:auto;flex:1;border-top:1px solid var(--line);padding-top:6px}
+.pbody dl{margin:0}
+.pbody dt{font-size:.7rem;font-weight:700;color:var(--soft);margin-top:7px}
+.pbody dd{margin:0;font-size:.84rem;line-height:1.3}
+.pn{position:absolute;bottom:7px;left:0;right:0;text-align:center;font-size:.72rem;color:var(--soft)}
+.pdel{position:absolute;bottom:3px;left:26px;padding:1px 7px;font-size:.78rem;line-height:1.3}
+.pren{position:absolute;bottom:3px;left:62px;padding:1px 8px;font-size:.82rem;line-height:1.3}
+.pdel.armed{background:#b3202a;border-color:#b3202a;color:#fff}
+.page h4{overflow-wrap:anywhere}
+.nt,.nt *{transition:none!important}
+.pcopy{position:absolute;bottom:3px;right:12px;padding:1px 9px;font-size:.7rem}
+.leaf .face.back{align-items:center}
+.flour{font-size:4rem;color:var(--line);line-height:1;margin:auto 0 0}
+.page small{color:var(--soft);margin-bottom:auto}
+.cfront{background:linear-gradient(90deg,rgba(0,0,0,.4),transparent 10%),var(--dark);color:#f3e6c8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.cfront::before{content:"";position:absolute;inset:14px;border:2px solid var(--gold);border-radius:4px}
+.cfront::after{content:"";position:absolute;inset:20px;border:1px solid var(--gold);opacity:.6;border-radius:2px}
+.cfront h2{margin:0;font:italic 400 2.3rem Palatino,Georgia,serif;color:var(--gold);position:relative;z-index:1}
+.cfront span{position:relative;z-index:1;font-size:.9rem}
+.cfront .orn{font-size:2rem;color:var(--gold)}
+.endc .face{background:linear-gradient(90deg,rgba(0,0,0,.4),transparent 10%),var(--dark);color:#f3e6c8;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;font-style:italic}
+.toc{list-style:none;margin:6px 0 0;padding:0;overflow:auto;flex:1}
+.toc button{display:block;width:100%;text-align:left;border:0;border-bottom:1px dashed var(--line);background:none;border-radius:0;padding:6px 2px;font-size:.76rem;line-height:1.3;color:var(--ink)}
+.toc button:hover{background:var(--card)}
+.toc b{color:var(--soft)}
+.bk-ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s;color:#f3e6c8}
+.bk-ctl.show{opacity:1;pointer-events:auto}
+.bk-ctl button:disabled{opacity:.4;cursor:default}
+#bkInfo{min-width:120px;text-align:center}
+#nameOv{position:fixed;inset:0;z-index:18;display:none;align-items:center;justify-content:center;background:rgba(10,6,4,.6)}
+#nameOv.show{display:flex}
+.namebox{background:var(--card2);color:var(--ink);border:2px solid var(--ink);border-radius:8px;padding:20px 22px;width:min(92vw,380px);animation:pop .35s cubic-bezier(.3,1.5,.5,1)}
+.namebox h3{margin:0 0 10px;font:italic 400 1.4rem Palatino,Georgia,serif}
+.namebox input{width:100%;font:inherit;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);border-radius:4px;padding:9px 11px}
+.namebox input:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+.nrow{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+.face.back.page small{text-align:center;font-size:.95rem;max-width:100%;overflow-wrap:anywhere;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.leaf,.cover,.endc,.book,#bookOv{transition-duration:.01s!important}}
+@media (prefers-reduced-motion:reduce){.rolling .shape,.landed .shape,.wiz svg,.wiz *{animation:none!important}#fx{display:none}button.icon.spin{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <h1>The Storyteller’s Dice</h1>
+  <p class="sub">Roll a plot hook, a motive, a twist and more. Lock what you like, reroll the rest.</p>
+  <div class="bar">
+    <label class="themepick">Theme <select id="theme"></select></label>
+    <button class="main" id="rollAll">Roll all dice</button>
+    <button id="save">Save seed</button>
+    <button id="mySeeds">My Seeds</button>
+    <button id="lockAll">Lock all</button>
+    <button id="unlock">Unlock all</button>
+    <button id="reset" class="icon" aria-label="Reset all dice" title="Reset all dice">↻</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="seedwrap">
+    <div class="wiz" id="wiz" aria-hidden="true">
+      <div class="bubble" id="bubble">Roll the dice and I’ll weave your tale.</div>
+      <svg viewBox="0 0 120 150">
+        <ellipse cx="60" cy="148" rx="36" ry="5" fill="#000" opacity=".18"/>
+        <g class="staffg">
+          <rect x="98" y="40" width="4" height="110" rx="2" fill="#7a5632"/>
+          <g class="orb"><circle cx="100" cy="34" r="12" fill="#ffd36b" opacity=".35"/><circle cx="100" cy="34" r="7" fill="#ffe9a8"/></g>
+        </g>
+        <path d="M30 148 L42 72 Q60 62 78 72 L90 148 Z" style="fill:var(--robe)"/>
+        <path d="M30 148 L33 134 L87 134 L90 148 Z" style="fill:var(--trim)"/>
+        <rect x="44" y="96" width="32" height="5" fill="#b98a45"/>
+        <path d="M76 80 Q92 86 98 98 L92 102 Q84 94 74 92 Z" style="fill:var(--robe)"/>
+        <circle cx="96" cy="100" r="5" fill="#f0cba0"/>
+        <g class="armL"><path d="M44 80 Q30 86 26 100 L33 104 Q38 94 48 92 Z" style="fill:var(--robe)"/><circle cx="29" cy="102" r="5" fill="#f0cba0"/></g>
+        <g class="beard"><path d="M45 62 Q60 70 75 62 Q72 96 60 112 Q48 96 45 62 Z" fill="#f4f1ea" stroke="#d9d3c4"/></g>
+        <circle cx="60" cy="58" r="15" fill="#f0cba0"/>
+        <path d="M46 64 Q60 76 74 64 Q60 68 46 64 Z" fill="#f4f1ea"/>
+        <g class="eyes"><circle cx="54" cy="56" r="2" fill="#2b1d12"/><circle cx="66" cy="56" r="2" fill="#2b1d12"/></g>
+        <path d="M52 46 Q60 50 68 46 L66 42 Q60 45 54 42 Z" fill="#f4f1ea"/>
+        <ellipse cx="60" cy="46" rx="32" ry="7" style="fill:var(--hatb)"/>
+        <path d="M38 45 Q50 40 60 8 Q64 26 82 45 Q60 50 38 45 Z" style="fill:var(--robe)"/>
+        <path d="M60 8 Q72 8 76 20 Q68 14 62 18 Z" style="fill:var(--robe)"/>
+        <path d="M40 43 Q60 49 80 43 L81 39 Q60 45 39 39 Z" fill="#b98a45"/>
+        <polygon points="58,30 60,25 62,30 67,31 63,34 64,39 60,36 56,39 57,34 53,31" fill="#ffd36b"/>
+      </svg>
+    </div>
+    <section class="seed" id="seed" aria-live="polite"><h3>Your story seed</h3><p>Roll the dice to begin.</p></section>
+  </div>
+
+  <section class="words">
+    <h2>Wandering Wordsmith</h2>
+    <div style="color:var(--soft)">Pick a scene type and draw fresh descriptive phrases.</div>
+    <div class="row">
+      <select id="cat" aria-label="Scene type"></select>
+      <button id="draw">Draw words</button>
+    </div>
+    <div class="chips" id="chips" aria-live="polite"></div>
+  </section>
+</main>
+<div id="nameOv" role="dialog" aria-modal="true" aria-labelledby="nameT">
+  <div class="namebox">
+    <h3 id="nameT">Name this seed</h3>
+    <input id="nameIn" maxlength="40" placeholder="e.g. The Moonlit Heist" autocomplete="off" aria-label="Seed name">
+    <div class="nrow"><button id="nameCancel">Cancel</button><button class="main" id="nameOk">Save seed</button></div>
+  </div>
+</div>
+<div id="bookOv" role="dialog" aria-modal="true" aria-label="My Seeds">
+  <div id="bookfly"><div class="book" id="book"></div></div>
+  <div class="bk-ctl" id="bkCtl">
+    <button id="bkPrev" aria-label="Previous page">‹ Prev</button>
+    <span id="bkInfo" aria-live="polite"></span>
+    <button id="bkNext" aria-label="Next page">Next ›</button>
+    <button id="bkClose">Close book</button>
+  </div>
+</div>
+<div id="fx" aria-hidden="true"></div>
+<div class="toast" id="toast">Copied</div>
+
+<script>
+const TABLES=[
+ {key:"hook",name:"Plot hook",sides:12,items:[
+  "A letter arrives sealed with a wax sigil no one recognizes","A village goes silent overnight, its people simply gone","A dying stranger presses a key into your hand and a name","An old debt comes due, called in by someone long thought dead","A map surfaces showing a place that shouldn’t exist","A noble offers a fortune for a task they refuse to explain","A prophecy names one of you, whether you believe it or not","A caravan is found abandoned, meals half-eaten, no signs of struggle","A childhood friend arrives begging for help, pursued by something unseen","An ancient bell rings for the first time in a century","A rival adventuring party goes missing chasing the same rumor","A festival is disrupted by an omen only you seem to notice"]},
+ {key:"motive",name:"Villain motive",sides:10,items:[
+  "Revenge for a wrong done generations ago","A desperate bid to save someone they love","Genuine belief they are the hero of this story","Greed dressed up as necessity","Fear of a greater threat only they can see coming","Loyalty to a cause that has curdled into fanaticism","A twisted sense of justice for the wronged","Ambition to reshape the world in their image","A pact made in desperation, now impossible to break","Grief that has calcified into cruelty"]},
+ {key:"twist",name:"Plot twist",sides:8,items:[
+  "The ally was working against you from the start","The villain was trying to prevent a worse catastrophe","The quest-giver withheld a crucial, damning truth","The macguffin is cursed, sentient, or both","Two factions you trusted are secretly the same one","The “monster” is the true victim of this story","A past choice comes back with unexpected consequences","The mentor figure has been dead or replaced for some time"]},
+ {key:"complication",name:"Complication",sides:6,items:[
+  "A storm, flood, or landslide cuts off the only route","Supplies are stolen, spoiled, or unexpectedly short","A trusted contact turns out to be unreachable or gone","Local authorities take sudden and unwelcome interest","An old injury or curse flares at the worst moment","A rival party arrives chasing the same goal"]},
+ {key:"place",name:"Location to discover",sides:10,items:[
+  "A sunken temple, drained by some recent upheaval","A market that only opens under a particular moon","An abandoned keep now claimed by something feral","A village built atop the bones of something ancient","A library that rearranges itself when unwatched","A bridge that appears only in fog or mist","A grove where the trees remember every visitor","An inn that exists slightly out of step with time","A mine shaft that goes far deeper than any map shows","A shrine tended by the last of a forgotten order"]},
+ {key:"reward",name:"Reward and consequence",sides:6,items:[
+  "A boon freely given, with strings that surface later","Coin and favor, but a new enemy made in the process","Knowledge that changes how the party sees the world","A title or reputation, welcome and inconvenient by turns","An item of power with a will and price of its own","Peace bought at a cost only one party member truly knows"]}
+];
+let WORDS={
+ "Combat: a hit lands":["cleaves","carves","rips through","tears into","bites deep","crashes home","punches through","batters aside","rakes across","drives home","splits the guard","buries itself in","opens a line of red"],
+ "Combat: a miss":["whiffs","skitters past","goes wide","is parried","scrapes harmlessly","thuds into a shield","cuts only air","skips off armor","is sidestepped entirely","is shrugged off"],
+ "Dungeon atmosphere":["dank and cavernous","tomb-still","airless","heavy with age","guttering torchlight","weeping stone","an echo that outlasts its source","a hush that feels deliberate","a coppery tang","a floor that sounds hollow underfoot","rust-eaten iron","the dark presses close"],
+ "Forest":["moss-draped boughs","roots like grasping fingers","dappled light","springy moss underfoot","wind sighing through branches","unseen eyes in the undergrowth","pine resin and damp earth","a clearing bathed in light","a fox slipping between roots","leaves whispering overhead"],
+ "Town and tavern":["lantern-lit and companionable","hawkers’ cries","clattering carts","fresh bread and woodsmoke","a crackling hearth","mismatched mugs","warm lamplight pooling on wood","a street performer drawing a crowd","leaning tenements","the clink of tankards"],
+ "Magic":["glimmering motes","spiraling light","a low resonant tone","ozone tang","hair standing on end","a pull behind the ribs","hands tracing sigils in the air","power gathering like a held breath","a cold that has no source","whispers with no speaker","scorch marks curling outward","the smell of rain after"],
+ "Creatures":["slinks","lumbers","skitters","stalks","coils to strike","a bone-rattling roar","a hiss like escaping steam","eyes like burning coals","a mane like storm clouds","gleaming carapace","testing the air for scent","watching from the treeline"],
+ "Weather and sky":["leaden clouds","bruised twilight","blood-red dusk","low-hanging fog","driving rain","oppressive stillness","a wall of rain advancing","the air thick with static","frost silvering the grass","thunder rolling in the distance"],
+ "NPC reactions":["knuckles white","breath catching","a sidelong glance","hand drifting to hilt","eyes glistening","a breath released all at once","jaw tightening","a voice thick with unshed tears","a smile that doesn’t reach the eyes","a slow reverent nod"],
+ "Villain presence":["radiating quiet menace","dangerously soft","patience that feels like a threat","fingers steepled in thought","eyes like chips of ice","the room seems to cool","conversation dies at their entrance","a compliment that feels like a blade","plans within plans","an old wound they refuse to name"]
+};
+
+const W=(a,b,c,d,e)=>({"Scenery":a,"Sounds and smells":b,"Creatures and folk":c,"Magic and omens":d,"Combat":e});
+const THEMES={
+ Original:{id:"",label:"Original",items:Object.fromEntries(TABLES.map(t=>[t.key,t.items])),words:WORDS,
+  sub:"Roll a plot hook, a motive, a twist and more. Lock what you like, reroll the rest.",
+  hello:"Roll the dice and I’ll weave your tale.",
+  cast:["Abracadabra…","The fates are stirring…","Hold tight, adventurer!","Consulting the old tomes…","Ooh, this one’s a doozy."],
+  done:["Behold, your story seed!","A fine tale brews.","Oh dear. That twist is wicked.","Perfectly dreadful. I love it.","Off you go, adventurers!","I did not see that coming either."]},
+ Christmas:{id:"christmas",label:"🎄 Christmas",
+  sub:"Winter tales for the longest night. Roll, lock and reroll.",
+  hello:"Ho ho… oh, wrong wizard. Roll the dice!",
+  cast:["Checking the list twice…","Jingling the fates…","Sprinkling a little frost…"],
+  done:["Merry and ominous!","A tale to tell by the fire.","This one’s going on the naughty list."],
+  items:{
+   hook:["A sleigh bell rings from a chimney no one has lit in years","Santa’s workshop sends a desperate letter: the toy forge has gone cold","A snowed-in village wakes to find every gift swapped for a riddle","A stranger in a red cloak leaves a list with your names on it","The town’s great fir tree blooms in midwinter, glowing from within","A frost-wrapped parcel arrives, addressed to someone long dead","The carolers stop mid-song and will not say why","A reindeer wanders into the tavern wearing a broken harness","A child swears the snowman moved in the night and left footprints","A king offers a feast and a fortune to whoever ends the endless winter","The yule log won’t burn, and something knocks from inside it","A star falls on the hill, and the hill begins to hum"],
+   motive:["Bitter that the holiday forgot them years ago","Hoards gifts to fill an empty house","Believes the world is naughty and must be corrected","Greed disguised as seasonal generosity","Fears the long night will not end without a sacrifice","Devoted to a winter spirit who demands tribute","Wants to be remembered, whatever it costs","Trying to keep a promise made one Christmas Eve","A bargain with the Frost Queen for one more winter with a loved one","Loneliness curdled into cruelty"],
+   twist:["The generous patron is the one stealing the gifts","The “villain” is a lost elf trying to get home","The naughty list was forged","The cursed ornament is a prison, and its occupant is awake","The two rival toy guilds share one hidden master","The snow is not weather but a spell, and it is spreading","A kindness from last winter returns with interest","The jolly benefactor has not been alive for years"],
+   complication:["A blizzard buries the only road","The mulled wine is spiked, or the cider has turned","The guide’s lantern oil freezes solid","The town watch locks the gates for the festival","A sleigh team bolts in the night","A rival band of carolers hunts the same prize"],
+   place:["A frozen lake with a lantern-lit village beneath the ice","A toy workshop gone silent mid-assembly","An inn where it is always Christmas Eve","A pine forest strung with glowing, living ornaments","A chapel whose bells ring on their own at midnight","A candy-cane colonnade leading into a snow cave","A mountain pass guarded by a sleeping frost giant","A frost-covered market of enchanted wares","A snow-buried manor with a table set for twenty","An ice palace built on top of an old gift vault"],
+   reward:["A gift that opens only when its giver is forgiven","A feast, a warm bed, and a debt owed to the host","Knowledge of what each party member truly wishes for","A festive title, with duties that last all year","An ornament of power that grants wishes at an odd price","Peace in the village, paid for with one secret kept"]},
+  words:W(["snow-laden boughs","frost-ferned windows","a sleigh track under moonlight","candlelit windowsills","icicles like crystal daggers","pine garlands over every door","smoke curling from snug chimneys","a hush after fresh snowfall"],
+   ["sleigh bells jingling","carols drifting through the snow","a crackling yule log","cinnamon and clove","roasting chestnuts","fresh gingerbread","creaking floorboards on Christmas Eve","mulled wine steaming"],
+   ["a rosy-cheeked innkeeper","a chittering elf","a reindeer steaming in the cold","a snow sprite","a winter wolf","carolers with frosted breath","a jolly stranger in red","a shivering urchin with a tin whistle"],
+   ["a star blazing overhead","ornaments glowing from within","frost spreading like writing","snowflakes that hang in the air","a hush that breaks into bells","a wish drifting up with the smoke","ribbons that knot themselves","a gift that hums"],
+   ["a snowball packed with ice","a candy-cane cudgel cracks","a sleigh runner scrapes sparks","ice shatters underfoot","the tinkling shatter of ornaments","bells ring out as steel meets steel","a lunge across the frozen floor","a frostbitten gasp"])},
+ Halloween:{id:"halloween",label:"🎃 Halloween",
+  sub:"Spooky tales for the thinning of the veil. Roll if you dare.",
+  hello:"Boo! Just kidding. Roll the dice.",
+  cast:["Stirring the cauldron…","The veil grows thin…","Something stirs in the dark…"],
+  done:["Deliciously dreadful!","The pumpkins approve.","Sleep well, adventurers."],
+  items:{
+   hook:["Every scarecrow in the valley has turned to face the village","A jack-o’-lantern lights itself and whispers your name","A masked stranger hands you an invitation to a ball that ended a century ago","The graveyard gate is found unlocked, and the graves are empty","Children vanish on trick-or-treat, leaving only a trail of candy","A witch offers a fortune for an ingredient she won’t name","The harvest moon rises red and the dead start knocking","A mirror in the tavern shows a different room","An old friend arrives, cold to the touch, begging for help","A bell tolls from the drowned church beneath the mill pond","The cornfield has grown a maze overnight","A haunted house has put up a “vacancy” sign"],
+   motive:["Revenge for a wrong buried with the dead","A desperate ritual to bring back someone they loved","Believes they are the village’s last guardian against the dark","Greed for the power of the thinned veil","Fear of what waits on the other side","Devotion to an old god that wakes once a year","A curse they cannot lift but can pass on","Wants to be seen after a lifetime behind a mask","A bargain with a spirit, now come due","Grief that never left the graveyard"],
+   twist:["The friendly host is the ghost","The monster is protecting the village from something worse","The trick was meant for you, and the treat is the trap","The costume is the real face","Two covens you trusted are one in disguise","The haunting is a memory, and you are part of it","The curse was cast by an ancestor of one of you","You have been dead since the first chime"],
+   complication:["Fog swallows the road and the lanterns die","Salt and silver run short or go missing","The trusted guide is unreachable, or was never there","The village mob wants someone to blame","An old wound aches with the moon","A rival coven arrives for the same relic"],
+   place:["A hollow hill lit by a ring of grinning pumpkins","A manor where every portrait’s eyes follow you","A cornfield maze that rearranges at midnight","A graveyard with one grave dug fresh for you","A swamp chapel half-sunk in black water","A candy shop open only after dark","A hay-wagon road that loops back on itself","A witch’s cottage that walks when unwatched","A bell tower with no rope and a ringing bell","A masquerade hall where no one removes a mask"],
+   reward:["A boon from the dead, with a name attached to repay","Candy and kindness, and a witch’s grudge","A truth about the village nobody wanted known","A reputation as monster-slayers, welcome and heavy","A cursed talisman that keeps its wearer safe, for a price","Peace for the haunted, bought by one of you staying behind"]},
+  words:W(["grinning jack-o’-lanterns","cobwebs thick as curtains","a moon the color of old bone","skeletal trees clawing at the sky","mist curling between headstones","a flickering porch light","crooked tombstones leaning together","a cornfield rustling with no wind"],
+   ["a distant tolling bell","rustling corn","the creak of a gate","wet leaves and woodsmoke","candle wax and decay","a laugh that stops too soon","scratching inside the walls","burnt sugar and cold earth"],
+   ["a skittering black cat","a hollow-eyed scarecrow","a bat-winged shadow","a cackling crone","a pale child with an empty basket","a ghoul’s shuffle","a masked reveler","a spider the size of a hound"],
+   ["a cold that has no source","candles guttering all at once","green fire in the cauldron","a whisper in your own voice","shadows that lag behind","a mirror that fogs from the inside","the veil thinning like old cloth","a lantern burning blue"],
+   ["a claw rakes the air","bones rattle as the skeleton lunges","a blade ghosts through the mist","straw arms lash out","a scream swallowed by the fog","silver bites cold","a pumpkin shatters underfoot","shadows surge and fall back"])},
+ Easter:{id:"easter",label:"🐣 Easter",
+  sub:"Bright tales for the turning of the season. Roll, lock and reroll.",
+  hello:"Spring has sprung! Roll the dice.",
+  cast:["Hatching a plot…","Planting a seed of mischief…","Hopping through the fates…"],
+  done:["Egg-cellent!","A tale in full bloom.","What a delightful mess."],
+  items:{
+   hook:["A giant egg is found in the meadow, warm and humming","The spring thaw uncovers a door in the hillside","A hare in a waistcoat begs you to follow him","Every egg in the village has hatched into something unexpected","A flower blooms that hasn’t bloomed in a thousand years","A basket arrives with a map to the first egg hunt of the realm","A spring festival begins a day early, and no one will say why","A stranger in a lamb’s fleece asks for shelter, and the fields turn green","The Spring Court sends word: the season has lost its way","A child’s painted egg begins to glow","A rival band of egg-hunters has gone missing in the meadow","A garden grows over a village in a single night"],
+   motive:["Revenge for being left out of the festival","Trying to keep winter from ending, to keep someone close","Believes spring is only worth it if earned","Greed for the golden egg","Fear that the season will not return","Devotion to a seed-spirit that demands the first fruits","A twisted sense of fairness: everyone must find their egg","Ambition to rule a perpetual spring","A promise to a hare king, now impossible to break","Grief that blooms into cruelty"],
+   twist:["The helpful hare has been leading you away from something","The villain is the season trying to be born","The golden egg is a prison, and its occupant is stirring","The festival’s keeper has been replaced by a lookalike","The Spring Court and the Frost Court are one","The “monster” is a hatchling lost far from home","An old kindness bears fruit in an unexpected garden","The meadow is not a meadow"],
+   complication:["A late frost kills the first blooms and the trail","The baskets are empty, or the eggs are rotten","The guide hare vanishes mid-sentence","The village mayor closes the hunt grounds","An old injury aches with the rain","A rival hunting party arrives with a better map"],
+   place:["A hollow hill of burrows and tiny doors","A meadow where the flowers turn to face travelers","A pastel village where no one stops smiling","An orchard in perpetual blossom","A nest the size of a barn","A stream spilling over painted stones","A sunlit chapel with a garden growing through the floor","A market of spun sugar and hand-painted shells","A greenhouse that holds the last of winter","A shrine tended by the last of the Spring Court"],
+   reward:["A blessing freely given, with a seed planted for later","A basket of treasures and a promise owed to the hares","Knowledge of when every season will turn","A title in the Spring Court, welcome and demanding","A golden egg with a will and price of its own","Renewal for the village, bought with one secret kept"]},
+  words:W(["pastel blossoms","dew-bright meadows","a field of daffodils","apple blossoms drifting like snow","painted shells in the tall grass","sunlit hedgerows","a lamb-bright hillside","a puddle mirroring a clear sky"],
+   ["birdsong at dawn","bells over the meadow","wet earth and new grass","honeysuckle on the breeze","a hare thumping in the hedge","fresh-baked sweet bread","buzzing bees","the crack of a shell"],
+   ["a waistcoated hare","a fluffy chick in a teacup","a nibbling lamb","a bright butterfly","a red-cheeked child with a basket","a wise old shepherd","a nest of speckled eggs","a spring sprite"],
+   ["a seed sprouting in your palm","an egg humming softly","flowers opening one by one","a rainbow that touches the ground","ribbons of green light","a warm wind from nowhere","petals that spell a name","a shimmer like sunlight on dew"],
+   ["a staff swings through the daffodils","a shell shatters underfoot","a hare leaps clear of the blow","a vine lashes out of the earth","mud sprays from a skidding boot","a thorn bush snags the blade","a gust of petals blinds the foe","the meadow trembles"])},
+ Valentine:{id:"valentine",label:"💘 Valentine’s Day",
+  sub:"Tales of hearts won, lost and stolen. Roll, lock and reroll.",
+  hello:"Love is in the air! Roll the dice.",
+  cast:["Notching an arrow…","Tangling a few heartstrings…","Consulting the stars of love…"],
+  done:["Oh, the drama!","Love and ruin, perfectly paired.","A tale to break hearts."],
+  items:{
+   hook:["A love letter arrives, unsigned, in your own handwriting","A matchmaker begs your help with an impossible pair","A heart-shaped locket is found, still warm","Cupid’s bow is stolen and every arrow is misfiring","Two rival suitors both claim the same person, and both hire you","A rose garden blooms in the dead of winter","A masked-ball invitation promises true love, or a trap","The town’s lovers all fall out on the same night","A noble offers a fortune for a love note delivered unread","A ballad names one of you as the heart’s thief","A long-lost love arrives, unchanged after twenty years","A fountain’s wishes start coming true, all wrong"],
+   motive:["Revenge for a heart broken long ago","A desperate bid to save someone they love","Believes love justifies any cost","Jealousy dressed up as devotion","Fear of dying unloved","Loyalty to a lover that has curdled into obsession","A twisted romance: if not me, then no one","Ambition to control who may love whom","A pact with a spirit of desire, now impossible to break","Grief that has calcified into cruelty"],
+   twist:["The ally was the secret admirer, and the saboteur","The villain was keeping two lovers apart for good reason","The matchmaker withheld a damning truth","The charmed ring is cursed, sentient, or both","Two feuding houses are secretly one family","The “heartbreaker” is the true victim","A past love returns with unexpected strings","The beloved has been dead or replaced for some time"],
+   complication:["A storm strands the coach on the wrong road","The gifts are stolen, spoiled, or sent to the wrong person","A trusted go-between is unreachable","A chaperone, or the city watch, takes notice","An old heartbreak flares at the worst moment","A rival suitor is chasing the same heart"],
+   place:["A garden maze where every path leads to a confession","A masked ball in a candlelit ballroom","A bridge hung with lovers’ padlocks","A chocolatier’s shop that sells more than chocolate","A balcony overlooking two feuding houses","A fountain where wishes are heard","A theater where the play seems to know you","An inn where every room is for two","A rose-covered chapel half forgotten","A shrine tended by the last of an order of lovers"],
+   reward:["A favor freely given, with strings that surface later","A fortune and a feud inherited","Knowledge that changes what you thought of love","The title of matchmaker, welcome and meddlesome","A charm of power with a will and price of its own","Peace bought with a love only one of you knows was lost"]},
+  words:W(["rose petals underfoot","candlelit balconies","ribbons tied to every railing","heart-shaped keyholes","velvet curtains","a moonlit courtyard","ivy-tangled trellises","lanterns strung across the square"],
+   ["a violin drifting from a window","whispered confessions","rose and vanilla","melting chocolate","the rustle of silk","a nervous laugh","a quill scratching late","warm bread and honey"],
+   ["a cherub with a crooked bow","a blushing messenger","a poet with ink-stained fingers","a duelist in lace","a dove with a ribbon","a suspicious chaperone","a matchmaker with a ledger","a lovelorn bard"],
+   ["an arrow humming in flight","a glowing heart-shaped locket","a rose that never wilts","a flush that spreads without cause","a thread of red light between two people","a whisper of someone’s true name","petals that rise against gravity","a spell that smells of honey"],
+   ["a rapier flickers like a lover’s glance","a thorned vine whips","silk tears under a blade","a cupid’s arrow whistles past","a heart-stopping parry","a vase shatters on the stones","roses scatter as boots skid","a duel under the balcony"])}
+};
+
+const $=s=>document.querySelector(s);
+const state={vals:{},locked:{}};
+const rnd=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+state.theme="Original";
+
+const grid=$("#grid");
+TABLES.forEach(t=>{
+  const el=document.createElement("div");
+  el.className="slot";el.id="slot-"+t.key;
+  el.innerHTML=`<button class="die s${t.sides}" aria-label="Roll ${t.name}"><span class="shape"></span><b>?</b><small>d${t.sides}</small></button>
+   <div><h2>${t.name}</h2><p>Not rolled yet</p></div>
+   <div class="tools"><button data-act="lock" aria-pressed="false">Lock</button><button data-act="roll">Reroll</button></div>
+   <details><summary>See the full table</summary><ol>${t.items.map(i=>`<li>${i}</li>`).join("")}</ol></details>`;
+  grid.appendChild(el);
+  el.querySelector(".die").onclick=()=>rollOne(t);
+  el.querySelector('[data-act="roll"]').onclick=()=>rollOne(t);
+  el.querySelector('[data-act="lock"]').onclick=()=>setLock(t.key,!state.locked[t.key]);
+});
+
+function setLock(key,on){
+  state.locked[key]=on;
+  const el=$("#slot-"+key),b=el.querySelector('[data-act="lock"]');
+  el.classList.toggle("locked",on);b.textContent=on?"Unlock":"Lock";b.setAttribute("aria-pressed",on);
+}
+
+const wiz=$("#wiz"),bubble=$("#bubble");
+let rolling=0,sparkTimer=null;
+let castLines=["Abracadabra…","The fates are stirring…","Hold tight, adventurer!","Consulting the old tomes…","Ooh, this one’s a doozy."];
+let doneLines=["Behold, your story seed!","A fine tale brews.","Oh dear. That twist is wicked.","Perfectly dreadful. I love it.","Off you go, adventurers!","I did not see that coming either."];
+const pick=a=>a[rnd(a.length)];
+function sparkle(){
+  const sp=document.createElement("span");sp.className="spark";
+  sp.style.left="76%";sp.style.top="21%";
+  sp.style.setProperty("--dx",(rnd(70)-35)+"px");sp.style.setProperty("--dy",-(20+rnd(50))+"px");
+  wiz.appendChild(sp);setTimeout(()=>sp.remove(),950);
+}
+function wizStart(){
+  if(rolling++===0){
+    $("#theme").disabled=true;
+    wiz.classList.add("show","casting");bubble.textContent=pick(castLines);
+    sparkTimer=setInterval(sparkle,110);
+  }
+}
+function wizEnd(){
+  if(--rolling===0){
+    $("#theme").disabled=false;
+    wiz.classList.remove("casting");clearInterval(sparkTimer);bubble.textContent=pick(doneLines);
+    for(let i=0;i<10;i++)setTimeout(sparkle,i*40);
+  }
+}
+
+async function rollOne(t,quiet){
+  wizStart();
+  const el=$("#slot-"+t.key),face=el.querySelector(".die b"),die=el.querySelector(".die");
+  const result=rnd(t.sides);
+  die.classList.remove("landed");die.classList.add("rolling");
+  const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const dur=reduce?150:900+rnd(500);
+  const end=Date.now()+dur;
+  while(Date.now()<end){face.textContent=1+rnd(t.sides);await sleep(70)}
+  face.textContent=result+1;
+  die.classList.remove("rolling");void die.offsetWidth;die.classList.add("landed");
+  el.querySelector("p").textContent=t.items[result];
+  el.querySelectorAll("details li").forEach((li,i)=>li.classList.toggle("hit",i===result));
+  state.vals[t.key]=t.items[result];
+  wizEnd();
+  if(!quiet)renderSeed();
+}
+
+async function rollAll(){
+  const btn=$("#rollAll");btn.disabled=true;
+  await Promise.all(TABLES.filter(t=>!state.locked[t.key]).map(async(t,i)=>{await sleep(i*120);await rollOne(t,true)}));
+  btn.disabled=false;renderSeed(true);
+}
+
+function renderSeed(save){
+  const v=state.vals,box=$("#seed");
+  if(!Object.keys(v).length)return;
+  box.innerHTML="<h3>Your story seed</h3><ul>"+TABLES.filter(t=>v[t.key]).map(t=>`<li><strong>${t.name}.</strong> ${v[t.key]}</li>`).join("")+"</ul>";
+}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1500)}
+
+$("#rollAll").onclick=rollAll;
+$("#unlock").onclick=()=>{TABLES.forEach(t=>setLock(t.key,false));toast("All dice unlocked")};
+$("#lockAll").onclick=()=>{TABLES.forEach(t=>setLock(t.key,true));toast("All dice locked")};
+const cat=$("#cat");
+function draw(){
+  const pool=[...WORDS[cat.value]],out=[];
+  while(out.length<5&&pool.length)out.push(pool.splice(rnd(pool.length),1)[0]);
+  $("#chips").innerHTML=out.map(w=>`<span class="chip">${w}</span>`).join("");
+}
+$("#draw").onclick=draw;cat.onchange=draw;
+
+/* ---------- saved seeds ---------- */
+state.saved=[];try{state.saved=JSON.parse(localStorage.getItem("dice-saved")||"[]")}catch(e){}
+const esc=x=>String(x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function persistSaved(){try{localStorage.setItem("dice-saved",JSON.stringify(state.saved))}catch(e){}}
+const nameOv=$("#nameOv"),nameIn=$("#nameIn");
+let renaming=null;
+function showName(title,okLabel,val){
+  $("#nameT").textContent=title;$("#nameOk").textContent=okLabel;
+  nameIn.value=val;nameOv.classList.add("show");nameIn.focus();nameIn.select();
+}
+function openName(){
+  if(!Object.keys(state.vals).length)return toast("Roll something first");
+  renaming=null;showName("Name this seed","Save seed","");
+}
+function openRename(id){
+  const v=state.saved.find(x=>String(x.id)===String(id));if(!v)return;
+  renaming=v.id;showName("Rename this seed","Rename",v.name||"");
+}
+function closeName(){nameOv.classList.remove("show");(renaming!==null?$("#bkClose"):$("#save")).focus()}
+function commitSave(){
+  const name=nameIn.value.trim().slice(0,40);
+  if(renaming!==null){
+    const v=state.saved.find(x=>x.id===renaming);
+    if(v){v.name=name;persistSaved();refreshBook(bk.cur);toast("Seed renamed")}
+    closeName();renaming=null;return;
+  }
+  state.saved.unshift({id:Date.now(),label:THEMES[state.theme].label,name,date:new Date().toLocaleString([],{dateStyle:"medium",timeStyle:"short"}),lines:TABLES.filter(t=>state.vals[t.key]).map(t=>[t.name,state.vals[t.key]])});
+  persistSaved();closeName();toast("Seed saved");
+}
+$("#save").onclick=openName;
+$("#nameOk").onclick=commitSave;
+$("#nameCancel").onclick=()=>{closeName();renaming=null};
+nameIn.addEventListener("keydown",e=>{
+  e.stopPropagation();
+  if(e.key==="Enter"){e.preventDefault();commitSave()}
+  else if(e.key==="Escape"){e.preventDefault();closeName();renaming=null}
+});
+nameOv.addEventListener("click",e=>{if(e.target===nameOv){closeName();renaming=null}});
+
+/* ---------- reset ---------- */
+function resetDice(){
+  if(rolling)return;
+  state.vals={};
+  TABLES.forEach(t=>{
+    setLock(t.key,false);
+    const el=$("#slot-"+t.key);
+    el.querySelector(".die b").textContent="?";
+    el.querySelector("p").textContent="Not rolled yet";
+    el.querySelectorAll("details li").forEach(li=>li.classList.remove("hit"));
+  });
+  $("#seed").innerHTML="<h3>Your story seed</h3><p>Roll the dice to begin.</p>";
+  bubble.textContent=THEMES[state.theme].hello;wiz.classList.remove("show","casting");
+}
+$("#reset").onclick=e=>{
+  if(rolling)return toast("Wait for the dice to land");
+  resetDice();toast("Dice reset");
+  const b=e.currentTarget;b.classList.remove("spin");void b.offsetWidth;b.classList.add("spin");
+};
+
+/* ---------- atmosphere and sprites ---------- */
+const SPR={
+ sleigh:'<svg viewBox="0 0 130 50"><path d="M78 28 Q66 32 58 30" stroke="#b3202a" stroke-width="1.6" fill="none"/><path d="M8 24 H46 Q56 24 58 15 Q58 32 46 34 H14 Q6 34 8 24Z" fill="#b3202a"/><path d="M6 42 H56 Q65 42 63 31" stroke="#c8962e" stroke-width="2.2" fill="none"/><path d="M18 34 V42 M44 34 V42" stroke="#c8962e" stroke-width="1.6"/><ellipse cx="15" cy="22" rx="7" ry="6" fill="#8a5a32"/><circle cx="31" cy="18" r="5" fill="#f0cba0"/><circle cx="33.5" cy="17" r="1" fill="#333"/><path d="M29 22 Q34 28 37 21 Q33 24 29 22Z" fill="#fff"/><path d="M26 17 Q27 4 37 14Z" fill="#d6322a"/><circle cx="25" cy="5" r="2.2" fill="#fff"/><g class="lg" style="transform-origin:82px 32px"><path d="M82 32 L80 44" stroke="#5b3a1e" stroke-width="2.6"/></g><g class="lg" style="transform-origin:96px 32px;animation-delay:.15s"><path d="M96 32 L99 44" stroke="#5b3a1e" stroke-width="2.6"/></g><path d="M74 24 L70 22" stroke="#5b3a1e" stroke-width="2.4"/><ellipse cx="88" cy="27" rx="13" ry="6.5" fill="#8a5a32"/><path d="M96 24 L101 14 L107 20 L100 30Z" fill="#8a5a32"/><circle cx="103" cy="17" r="4.6" fill="#8a5a32"/><circle cx="108" cy="18" r="1.7" fill="#d6322a"/><circle cx="104" cy="15.5" r="0.9" fill="#222"/><path d="M101 13 L98 4 M101 13 L106 5 M98 4 L95 6 M106 5 L109 7" stroke="#5b3a1e" stroke-width="1.5" fill="none"/></svg>',
+ snowman:'<svg viewBox="0 0 56 80"><circle cx="26" cy="62" r="16" fill="#fff" stroke="#9fb7c8" stroke-width="1.5"/><circle cx="26" cy="38" r="12" fill="#fff" stroke="#9fb7c8" stroke-width="1.5"/><circle cx="26" cy="18" r="9" fill="#fff" stroke="#9fb7c8" stroke-width="1.5"/><circle cx="23" cy="16" r="1.2" fill="#333"/><circle cx="29" cy="16" r="1.2" fill="#333"/><path d="M26 19 L35 21 L26 22Z" fill="#f08a24"/><rect x="17" y="26" width="18" height="4" rx="2" fill="#b3202a"/><rect x="19" y="3" width="14" height="6" fill="#2d4a38"/><rect x="15" y="8" width="22" height="3" fill="#2d4a38"/><path d="M14 36 L2 42" stroke="#6b4a2a" stroke-width="2" fill="none"/><path class="arm" style="transform-origin:38px 36px" d="M38 36 L52 26 M48 29 L50 22" stroke="#6b4a2a" stroke-width="2" fill="none"/></svg>',
+ bat:'<svg viewBox="0 0 60 30"><path class="wl" style="transform-origin:27px 15px" d="M27 14 Q14 2 2 8 Q8 12 6 20 Q14 14 20 22 Q24 18 27 14Z" fill="#2f2040" stroke="#9a75c8"/><path class="wr" style="transform-origin:33px 15px" d="M33 14 Q46 2 58 8 Q52 12 54 20 Q46 14 40 22 Q36 18 33 14Z" fill="#2f2040" stroke="#9a75c8"/><ellipse cx="30" cy="16" rx="5" ry="7" fill="#2f2040" stroke="#9a75c8"/><path d="M26 10 L27 5 L30 9 L33 5 L34 10Z" fill="#2f2040" stroke="#9a75c8"/><circle cx="28" cy="14" r="1" fill="#ff8a1f"/><circle cx="32" cy="14" r="1" fill="#ff8a1f"/></svg>',
+ ghost:'<svg viewBox="0 0 40 50" class="ghostfade"><path d="M4 46 V20 Q4 4 20 4 Q36 4 36 20 V46 L30 40 L25 46 L20 40 L15 46 L10 40Z" fill="#f4f1ff" opacity=".92"/><circle cx="14" cy="20" r="3" fill="#2a1d33"/><circle cx="26" cy="20" r="3" fill="#2a1d33"/><ellipse cx="20" cy="29" rx="3" ry="4" fill="#2a1d33"/></svg>',
+ pumpkin:'<svg viewBox="0 0 48 42"><rect x="22" y="2" width="4" height="8" rx="1.5" fill="#4d7a3a"/><ellipse cx="24" cy="26" rx="20" ry="15" fill="#f07a1a"/><path d="M24 11 Q14 26 24 41 M24 11 Q34 26 24 41" stroke="#c4560c" stroke-width="1.5" fill="none"/><g class="glow"><path d="M12 22 L18 22 L15 17Z M30 22 L36 22 L33 17Z" fill="#ffe08a"/><path d="M14 31 Q24 38 34 31 L31 29 L28 32 L24 29 L20 32 L17 29Z" fill="#ffe08a"/></g></svg>',
+ bunny:'<svg viewBox="0 0 56 50"><ellipse cx="26" cy="34" rx="15" ry="10" fill="#fff" stroke="#bda9d6" stroke-width="1.5"/><circle cx="11" cy="32" r="4" fill="#fff" stroke="#bda9d6" stroke-width="1.5"/><ellipse cx="39" cy="12" rx="3" ry="9" fill="#fff" stroke="#bda9d6" stroke-width="1.5" transform="rotate(-8 39 19)"/><ellipse cx="46" cy="13" rx="3" ry="9" fill="#fff" stroke="#bda9d6" stroke-width="1.5" transform="rotate(10 46 20)"/><ellipse cx="39" cy="13" rx="1.2" ry="6" fill="#f6b6cf" transform="rotate(-8 39 19)"/><circle cx="41" cy="26" r="8" fill="#fff" stroke="#bda9d6" stroke-width="1.5"/><circle cx="44" cy="24" r="1.4" fill="#333"/><circle cx="49" cy="27" r="1.4" fill="#f08aa8"/><ellipse cx="35" cy="44" rx="6" ry="2.5" fill="#fff" stroke="#bda9d6"/><ellipse cx="18" cy="44" rx="6" ry="2.5" fill="#fff" stroke="#bda9d6"/></svg>',
+ butterfly:'<svg viewBox="0 0 40 30"><g class="bw" style="transform-origin:20px 15px"><ellipse cx="11" cy="10" rx="9" ry="7" fill="#f2a0c4"/><ellipse cx="29" cy="10" rx="9" ry="7" fill="#f2a0c4"/><ellipse cx="12" cy="21" rx="6" ry="5" fill="#ffd36b"/><ellipse cx="28" cy="21" rx="6" ry="5" fill="#ffd36b"/></g><rect x="19" y="6" width="2" height="18" rx="1" fill="#5a3f6e"/></svg>',
+ heart:'<svg viewBox="0 0 64 44"><path class="wl" style="transform-origin:26px 22px" d="M26 22 Q10 6 2 14 Q8 18 6 26 Q14 20 24 28Z" fill="#fff" stroke="#e8bcc6"/><path class="wr" style="transform-origin:38px 22px" d="M38 22 Q54 6 62 14 Q56 18 58 26 Q50 20 40 28Z" fill="#fff" stroke="#e8bcc6"/><path d="M32 40 C16 28 16 14 26 14 C29 14 31 16 32 18 C33 16 35 14 38 14 C48 14 48 28 32 40Z" fill="#d6456f"/></svg>'
+};
+const FX={
+ christmas:{lights:true,p:{ch:["❄","❅","❆"],cols:["#9fc0d6","#ffffff","#c4d9e6"],glow:"rgba(70,110,140,.6)",a:"fallp",rate:380,size:[11,22],dur:[9,16]},
+  sprites:[{svg:"sleigh",cls:"fly",pos:"top:7%",w:150,d:"28s",dl:"1s"},{svg:"snowman",cls:"bob",pos:"bottom:14px;left:20px",w:54}]},
+ halloween:{fog:true,p:{ch:["•","✦","·"],cols:["#ff8a1f","#ffb35c","#ffd36b"],glow:"rgba(255,138,31,.9)",a:"risep",rate:450,size:[10,20],dur:[9,16]},
+  sprites:[{svg:"bat",cls:"fly",pos:"top:11%",w:58,d:"17s",dl:"1s"},{svg:"bat",cls:"fly",pos:"top:32%",w:44,d:"23s",dl:"8s"},{svg:"ghost",cls:"bob",pos:"bottom:18px;right:24px",w:44},{svg:"pumpkin",cls:"bob",pos:"bottom:14px;left:20px",w:50}]},
+ easter:{p:{ch:["✿","❀","✾"],cols:["#f2a0c4","#c9a8e8","#ffd36b","#9fd6b5"],glow:"rgba(255,255,255,.8)",a:"fallp",rate:520,size:[12,22],dur:[11,19]},
+  sprites:[{svg:"bunny",cls:"hop",pos:"bottom:12px",w:58,d:"36s",dl:"1s"},{svg:"butterfly",cls:"flit",pos:"top:24%;left:8%",w:38},{svg:"butterfly",cls:"flit",pos:"top:58%;right:14%",w:30}]},
+ valentine:{p:{ch:["♥","♥","❤"],cols:["#d6456f","#f08aa8","#ff6f91","#b3203f"],glow:"rgba(255,255,255,.8)",a:"risep",rate:420,size:[11,24],dur:[9,16]},
+  sprites:[{svg:"heart",cls:"flit",pos:"top:22%;left:6%",w:56},{svg:"heart",cls:"flit",pos:"top:54%;right:8%",w:44}]}
+};
+let fxTimer=null;
+const R=(a,b)=>a+Math.random()*(b-a);
+function setFx(name){
+  const fx=$("#fx");fx.innerHTML="";clearInterval(fxTimer);
+  const F=FX[THEMES[name].id];
+  if(!F||matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+  if(F.fog){const f=document.createElement("div");f.className="fog";fx.appendChild(f)}
+  if(F.lights){
+    const L=document.createElement("div");L.className="lights";
+    const cols=["#d6322a","#2e9d57","#e8b030","#3a7bd5"];
+    for(let i=0;i<26;i++){const b=document.createElement("i");b.style.setProperty("--b",cols[i%4]);b.style.setProperty("--dl",(i%5)*.35+"s");L.appendChild(b)}
+    fx.appendChild(L);
+  }
+  F.sprites.forEach(sp=>{
+    const d=document.createElement("div");d.className="sp "+sp.cls;
+    d.style.cssText=sp.pos+";width:"+sp.w+"px;"+(sp.d?"--d:"+sp.d+";--dl:"+sp.dl:"");
+    d.innerHTML=SPR[sp.svg];fx.appendChild(d);
+  });
+  const P=F.p;
+  const spawn=()=>{
+    if(document.hidden)return;
+    const e=document.createElement("span");e.className="pt";
+    e.textContent=pick(P.ch)+"\uFE0E";
+    e.style.cssText=`--x:${R(0,98)}%;--s:${R(...P.size)}px;--c:${pick(P.cols)};--g:${P.glow};--a:${P.a};--t:${R(...P.dur)}s;--dx:${R(-90,90)}px;--r:${R(-240,240)}deg`;
+    fx.appendChild(e);e.addEventListener("animationend",()=>e.remove());
+  };
+  for(let i=0;i<10;i++)setTimeout(spawn,i*120);
+  fxTimer=setInterval(spawn,P.rate);
+}
+
+/* ---------- My Seeds book ---------- */
+const ov=$("#bookOv"),fly=$("#bookfly"),bookEl=$("#book"),ctl=$("#bkCtl");
+const bk={open:false,locked:false,cur:0,leaves:[],cover:null};
+const RM=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
+const wait=ms=>new Promise(r=>setTimeout(r,RM()?20:ms));
+const frame=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+const iconOf=l=>/^\S+\s/.test(l)?l.split(" ")[0]:"";
+const wordOf=l=>l.replace(/^\S+\s/,"");
+const backTitle=v=>(iconOf(v.label)+" "+(v.name||wordOf(v.label))).trim();
+function brief(v){
+  const g=n=>(v.lines.find(l=>l[0]===n)||[])[1],cut=x=>x.replace(/[.!\s]+$/,"");
+  let t=g("Plot hook")?cut(g("Plot hook")):"";
+  if(g("Plot twist"))t+=(t?". Twist: ":"Twist: ")+cut(g("Plot twist"));
+  if(!t)t=v.lines.slice(0,2).map(l=>cut(l[1])).join(". ");
+  t+=".";return t.length>160?t.slice(0,157).trimEnd()+"…":t;
+}
+function buildBook(){
+  const seeds=state.saved,N=seeds.length;
+  bk.cur=0;bk.leaves=[];
+  const toc=N?`<ol class="toc">${seeds.map((v,i)=>{const b=brief(v);return `<li><button data-go="${i}"><b>${i+1}.</b> ${esc(v.label)}: ${esc(b.length>78?b.slice(0,75).trimEnd()+"…":b)}</button></li>`}).join("")}</ol>`:'<p class="empty" style="margin-top:14px">No seeds yet. Press “Save seed” on the main page and it will appear here.</p>';
+  let h=`<div class="endc"><div class="face">${N?"✦ The End ✦":"Your first page is waiting."}</div></div>`;
+  seeds.forEach((v,i)=>{
+    h+=`<div class="leaf" data-i="${i}" style="z-index:${100-i}"><div class="face page front"><div class="ph"><span>${esc(v.label)}</span><span>${esc(v.date)}</span></div><h4>${esc(v.name||wordOf(v.label))}</h4><p class="brief"><em>In brief.</em> ${esc(brief(v))}</p><div class="pbody"><dl>${v.lines.map(l=>`<dt>${esc(l[0])}</dt><dd>${esc(l[1])}</dd>`).join("")}</dl></div><div class="pn">${i+1}</div><button class="pren" data-id="${v.id}" aria-label="Rename this seed" title="Rename this seed">✎\uFE0E</button><button class="pdel" data-id="${v.id}" aria-label="Delete this seed" title="Delete this seed">🗑</button><button class="pcopy" data-id="${v.id}">Copy</button></div><div class="face back page"><div class="flour">❦</div><small>${esc(backTitle(v))}</small></div></div>`;
+  });
+  h+=`<div class="cover" style="z-index:300"><div class="face cfront"><span class="orn">✦</span><h2>My Seeds</h2><span>${N} ${N===1?"tale":"tales"} kept</span></div><div class="face back page"><h4>Contents</h4><div class="ph"><span>${N} ${N===1?"seed":"seeds"}</span><span>Tap one to jump</span></div>${toc}</div></div>`;
+  bookEl.className="book";bookEl.innerHTML=h;
+  bk.cover=bookEl.querySelector(".cover");
+  bk.leaves=[...bookEl.querySelectorAll(".leaf")].map(el=>({el,t:0}));
+  updateCtl();
+}
+function updateCtl(){
+  const n=bk.leaves.length;
+  $("#bkPrev").disabled=bk.cur===0;$("#bkNext").disabled=bk.cur>=n;
+  $("#bkInfo").textContent=n===0?"No seeds yet":bk.cur<n?`Seed ${bk.cur+1} of ${n}`:"The End";
+}
+function flipLeaf(i,fwd){
+  const L=bk.leaves[i];clearTimeout(L.t);
+  L.el.style.zIndex=200;L.el.classList.toggle("flipped",fwd);
+  L.t=setTimeout(()=>{L.el.style.zIndex=fwd?10+i:100-i},RM()?30:900);
+}
+function step(dir){
+  const i=dir>0?bk.cur:bk.cur-1;
+  if(i<0||i>=bk.leaves.length)return;
+  flipLeaf(i,dir>0);bk.cur+=dir;updateCtl();
+}
+function turn(dir){if(bk.open&&!bk.locked)step(dir)}
+async function goTo(t){
+  if(!bk.open||bk.locked)return;bk.locked=true;
+  while(bk.cur!==t){step(t>bk.cur?1:-1);await wait(190)}
+  bk.locked=false;
+}
+function flyVec(){
+  const b=$("#mySeeds").getBoundingClientRect(),w=fly.getBoundingClientRect();
+  return {dx:b.left+b.width/2-(w.left+w.width/2),dy:b.top+b.height/2-(w.top+w.height/2)};
+}
+function refreshBook(cur){
+  bookEl.classList.add("nt");
+  buildBook();
+  const n=bk.leaves.length;cur=Math.min(cur,Math.max(0,n-1));
+  bk.cover.classList.add("flipped");bk.cover.style.zIndex=1;bookEl.classList.add("open");
+  bk.leaves.forEach((L,i)=>{if(i<cur){L.el.classList.add("flipped");L.el.style.zIndex=10+i}});
+  bk.cur=cur;updateCtl();
+  void bookEl.offsetWidth;bookEl.classList.remove("nt");
+}
+function delSeed(id){
+  state.saved=state.saved.filter(x=>String(x.id)!==String(id));
+  persistSaved();refreshBook(bk.cur);toast("Seed deleted");
+}
+async function openBook(){
+  if(bk.open||bk.locked)return;bk.locked=true;
+  buildBook();ov.classList.add("show");await frame();
+  const {dx,dy}=flyVec();ov.classList.add("on");
+  const small=`translate(${dx}px,${dy}px) scale(.08) rotate(-20deg)`;
+  const a=fly.animate([{transform:small,opacity:0},{opacity:1,offset:.3},{transform:"translate(0,0) scale(1) rotate(0deg)",opacity:1}],{duration:RM()?1:780,easing:"cubic-bezier(.2,.9,.25,1)",fill:"both"});
+  await a.finished;a.cancel();
+  await wait(120);
+  bk.cover.classList.add("flipped");bookEl.classList.add("open");
+  await wait(950);bk.cover.style.zIndex=1;
+  bk.open=true;bk.locked=false;ctl.classList.add("show");$("#bkClose").focus();
+}
+async function closeBook(){
+  if(!bk.open||bk.locked)return;bk.locked=true;ctl.classList.remove("show");
+  const n=bk.cur;
+  if(n>0){
+    const gap=Math.max(70,Math.min(150,900/n));
+    for(let i=n-1;i>=0;i--){flipLeaf(i,false);await wait(gap)}
+    bk.cur=0;await wait(900);
+  }
+  bk.cover.style.zIndex=300;bk.cover.classList.remove("flipped");bookEl.classList.remove("open");
+  await wait(1000);
+  const {dx,dy}=flyVec();ov.classList.remove("on");
+  const a=fly.animate([{transform:"translate(0,0) scale(1) rotate(0deg)",opacity:1},{opacity:1,offset:.6},{transform:`translate(${dx}px,${dy}px) scale(.08) rotate(20deg)`,opacity:0}],{duration:RM()?1:700,easing:"cubic-bezier(.55,0,.8,.4)",fill:"forwards"});
+  await a.finished;
+  ov.classList.remove("show");a.cancel();
+  bk.open=false;bk.locked=false;$("#mySeeds").focus();
+}
+$("#mySeeds").onclick=openBook;
+$("#bkNext").onclick=()=>turn(1);
+$("#bkPrev").onclick=()=>turn(-1);
+$("#bkClose").onclick=closeBook;
+ov.addEventListener("click",e=>{if(e.target===ov)closeBook()});
+bookEl.addEventListener("click",async e=>{
+  const rn=e.target.closest(".pren");
+  if(rn){if(!bk.locked)openRename(rn.dataset.id);return}
+  const d=e.target.closest(".pdel");
+  if(d){
+    if(bk.locked)return;
+    if(d.dataset.armed){clearTimeout(d._t);delSeed(d.dataset.id)}
+    else{d.dataset.armed="1";d.classList.add("armed");toast("Press the trash can again to delete");d._t=setTimeout(()=>{delete d.dataset.armed;d.classList.remove("armed")},3000)}
+    return}
+  const c=e.target.closest(".pcopy");
+  if(c){const v=state.saved.find(x=>String(x.id)===c.dataset.id);
+    if(v)try{await navigator.clipboard.writeText(v.lines.map(l=>l[0]+": "+l[1]).join("\n"));toast("Story seed copied")}catch(err){toast("Copy blocked by the browser")}
+    return}
+  const g=e.target.closest("[data-go]");if(g)return goTo(+g.dataset.go);
+  const lf=e.target.closest(".leaf");if(lf)turn(lf.classList.contains("flipped")?-1:1);
+});
+document.addEventListener("keydown",e=>{
+  if(!bk.open)return;
+  if(e.key==="ArrowRight")turn(1);else if(e.key==="ArrowLeft")turn(-1);else if(e.key==="Escape")closeBook();
+});
+
+const themeSel=$("#theme");
+Object.keys(THEMES).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=THEMES[k].label;themeSel.appendChild(o)});
+function applyTheme(name){
+  const T=THEMES[name];if(!T||rolling)return;
+  state.theme=name;themeSel.value=name;
+  if(T.id)document.documentElement.dataset.theme=T.id;else document.documentElement.removeAttribute("data-theme");
+  TABLES.forEach(t=>{t.items=T.items[t.key];$("#slot-"+t.key).querySelector("details ol").innerHTML=t.items.map(i=>`<li>${i}</li>`).join("")});
+  resetDice();setFx(name);
+  WORDS=T.words;
+  cat.innerHTML="";Object.keys(WORDS).forEach(k=>{const o=document.createElement("option");o.textContent=k;cat.appendChild(o)});
+  draw();
+  $(".sub").textContent=T.sub;
+  castLines=T.cast;doneLines=T.done;bubble.textContent=T.hello;
+  $("#seed").innerHTML="<h3>Your story seed</h3><p>Roll the dice to begin.</p>";
+  document.title="The Storyteller’s Dice"+(T.id?" – "+T.label.replace(/^\S+\s/,""):"");
+}
+themeSel.onchange=()=>applyTheme(themeSel.value);
+applyTheme("Original");
+</script>
+</body>
+</html>
